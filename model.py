@@ -124,7 +124,7 @@ def precedes(a, b):
         return True
     if a.timestamp > b.timestamp:
         return False
-    for i in TIEBREAKER_ORDERING:
+    for i in TIEBREAKER_ORDER:
         if i == a:
             return True
         if i == b:

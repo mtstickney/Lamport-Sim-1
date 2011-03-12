@@ -5,7 +5,7 @@ import heapq
 import util
 
 MAX_RAND_INCREMENT=500
-TIEBREAKER_ORDER=range(len(pids))
+TIEBREAKER_FUNC=(lambda m1, m2: m1.sender < m2.sender)
 INITIAL_GRANT=0
 
 class Message:
@@ -124,9 +124,4 @@ def precedes(a, b):
         return True
     if a.timestamp > b.timestamp:
         return False
-    for i in TIEBREAKER_ORDER:
-        if i == a:
-            return True
-        if i == b:
-            return False
-    return False
+    return TIEBREAKER_FUNC(a, b)

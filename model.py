@@ -4,9 +4,9 @@ import collections
 import random
 import heapq
 
-procs=nil
 MAX_RAND_INCREMENT=500
 TIEBREAKER_ORDER=range(len(pids))
+INITIAL_GRANT=0
 
 class Msg:
     def __init__(self, msg_type, sender_id, timestamp, data=nil):
@@ -28,15 +28,16 @@ class Msg:
         return not precedes(self, other)
 
 class Process:
-    def __init__(self, initial_grant, clock_increment=nil, event_interval=0):
+    def __init__(self, pid, clock_increment=nil, event_interval=0):
         self.clock = 0
+        self.pid = pid
         if (clock_increment is nil):
             self.clock_increment = random.randint(1, MAX_RAND_INCREMENT)
         else:
             self.clock_increment = clock_increment
         self.next_clock = self.clock+self.clock_increment
         self.event_inteveral = event_interval
-        self.msg_queue = [Msg("REQUEST", initial_grant, -1, {})]
+        self.msg_queue = [Msg("REQUEST", INITIAL_GRANT, -1, set())]
 
     def update_clock(self, new_clock=nil):
         if (new_clock is not nil and new_clock < self.clock):
@@ -62,32 +63,29 @@ class Process:
             return (sender, reply)
         if msg.msg_type is intern("ACK"):
             # Find the request message this is acking
-            msg_lst = filter(lambda m: m.timestamp == msg.data and m.sender is self, msg_queue)
+            msg_lst = filter(lambda m: m.timestamp == msg.data and m.sender is self.pid, msg_queue)
             if not msg_lst:
                 warn("Spurious ACK received (no pending request found)")
                 return nil
-            # Request message's data is a dictionary of acked/non-acked processes
-            msg_lst[0].data[msg.sender] = 1
+            if len(msg_lst) > 1:
+                warn("Warning: ACK matches multiple requests")
+            # Request message's data is a set of ack'ed processes
+            msg_lst[0].data.add(self.pid)
+            return nil
+        if msg.msg_type is intern("RELEASE"):
+            newlst = [m for m in self.msg_queue if m.msg_type is not "REQUEST" or m.sender is not msg.sender]
+            self.msg_queue = newlst
+            heapq.heapify(self.msg_queue)
 
-            
-    def request_resource(self, proc_lst):
+    def request_resource(self):
         self.update_clock()
-        msg = Msg("REQUEST", self.pid, self.clock, [0 for p in procs])
+        msg = Message("REQUEST", self.pid, self.clock, set())
         heapq.heappush(self.msg_queue, msg)
-        return msg
+        return (nil, msg)
 
-    def recv_request(self, msg, sender):
-        self.update_clock(msg.timestamp)
-        heapq.heappush(self.msg_queue, msg)
-        msg = Msg("ACK", self.pid, )
-        
-    def recv_msg(self, msg)
-        msg_sym = intern(msg.msg_type)
-        self.update_clock(msg.timestamp)
-        self.msg_queue.append((sender_id, msg_sym))
-
-    def send_msg(self, msg_type):
+    def release_resource(self):
         self.update_clock()
+        msg = Message("RELEASE", self, self.clock)
 
 # message comparison func
 def precedes(a, b):
@@ -101,10 +99,3 @@ def precedes(a, b):
         if i == b:
             return False
     return False
-
-def init(numprocs):
-    procs=[Process() for i in range(numprocs)]
-
-def 
-
-random.seed()

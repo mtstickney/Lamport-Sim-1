@@ -2,7 +2,7 @@
 
 import random
 import heapq
-import warn
+import util
 
 MAX_RAND_INCREMENT=500
 TIEBREAKER_ORDER=range(len(pids))

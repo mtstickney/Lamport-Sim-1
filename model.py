@@ -71,8 +71,8 @@ class Process:
         else:
             self.next_clock = self.clock+self.clock_increment
 
-    # Convention: methods return None if there is no reply, otherwise a (recipient, msg) pair
-    # if recipient is None, msg is broadcast
+    # Convention: methods return None if there is no reply, otherwise a
+    # (recipient, msg) pair if recipient is None, msg is broadcast
     def recv_msg(self, msg):
         """Receive an incoming message.
 
@@ -85,17 +85,21 @@ class Process:
             return (msg.sender, reply)
         if msg.msg_type is intern("ACK"):
             # Find the request message this is acking
-            msg_lst = filter(lambda m: m.timestamp == msg.data and m.sender is self.pid, self.msg_queue)
-            if not msg_lst:
-                warn("Spurious ACK received (no pending request found)")
-                return None
+            is_matching_request = (lambda m: m.timestamp == msg.data and
+                                   m.sender is self.pid)
+            msg_lst = filter(is_matching_request, self.msg_queue)
             if len(msg_lst) > 1:
-                warn("Warning: ACK matches multiple requests")
+                util.warn("Warning: ACK matches more than one request")
+            if len(msg_lst) == 0:
+                util.warn("Spurious ACK received (no pending request found)")
+                return None
             # Request message's data is a set of ack'ed processes
             msg_lst[0].data.add(self.pid)
             return None
         if msg.msg_type is intern("RELEASE"):
-            newlst = [m for m in self.msg_queue if m.msg_type is not "REQUEST" or m.sender is not msg.sender]
+            newlst = filter((lambda m: m.msg_type is not "REQUEST" or
+                             m.sender is not msg.sender),
+                            self.msg_queue)
             self.msg_queue = newlst
             heapq.heapify(self.msg_queue)
             return None

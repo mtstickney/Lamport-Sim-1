@@ -58,7 +58,7 @@ class History:
         try:
             return self.cache[key]
         except KeyError:
-            val = hist_find(self.hist, key)
+            val = hist_find(reversed(self.hist), key)
             self.cache[key] = val
             return val
 

@@ -49,6 +49,7 @@ class History:
     def set_current_key(self, key, val):
         # We're appending/popping on the right, so hist[-1] is the current state
         self.hist[-1][key] = val
+        self.cache[key] = val
 
     def get_current_key(self, key):
         assert self.cache is not None

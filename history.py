@@ -45,7 +45,6 @@ class History:
         self.hist.append(dict(*args, **kwargs))
         if len(self.tail) > 0:
             self.tail.clear()
-        self.cache.clear()
 
     def __setitem__(self, key, val):
         # We're appending/popping on the right, so hist[-1] is the current state

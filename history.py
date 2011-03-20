@@ -48,6 +48,16 @@ class History:
             self.tail.clear()
         self.cache = None
 
+    def set_current_key(self, key, val):
+        # We're appending/popping on the right, so hist[-1] is the current state
+        self.hist[-1][key] = val
+
+    def get_current_key(self, key):
+        if self.cache is None:
+            self.fill_cache()
+        if key in self.cache:
+            return self.cache[key]
+
     def fill_cache(self):
         if self.cache is None:
             self.cache = dict()
@@ -71,12 +81,6 @@ class History:
                 return None
             self.cache["procs"][p] = proc
         return self.cache
-
-    def cur_state(self):
-        "Returns the current history state"
-        if self.cache is not None:
-            return self.cache
-        return self.fill_cache()
 
     def back(self, n=1):
         """Move back n positions in the history.

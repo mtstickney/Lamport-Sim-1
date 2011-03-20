@@ -44,17 +44,21 @@ class History:
         self.hist.append(dict(*args, **kwargs))
         if len(self.tail) > 0:
             self.tail.clear()
-        self.cache = None
+        self.cache.clear()
 
     def set_current_key(self, key, val):
         # We're appending/popping on the right, so hist[-1] is the current state
         self.hist[-1][key] = val
 
     def get_current_key(self, key):
-        if self.cache is None:
+        assert self.cache is not None
+        if key not in self.cache
             self.fill_cache()
-        if key in self.cache:
+        try:
             return self.cache[key]
+        except KeyError:
+            util.warn("Key '{}' not in history".format(key))
+            return None
 
     def fill_cache(self):
         if self.cache is None:
@@ -86,14 +90,14 @@ class History:
         If there aren't n past items in the history, move back until we reach the initial state or empty history."""
         for i in range(min(n, len(self.hist)-1)):
             self.tail.append(self.hist.pop())
-        self.cache = None
+        self.cache.clear()
         assert len(self.hist) >= 1
 
     def forward(self, n=1):
         "Move forward n positions in the history."
         for i in range(min(n, len(self.tail))):
             self.hist.append(self.tail.pop())
-        self.cache = None
+        self.cache.clear()
 
 # Optional getkey parameter is used to filter the history state if non-None
 # Ex: getkey=(lambda s: return s["procs"]) will make search the procs dict

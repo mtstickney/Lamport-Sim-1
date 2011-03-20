@@ -35,22 +35,17 @@ class History:
         return len(self.hist)+len(self.tail)
 
     def past_len(self):
-        "Returns the number of past or current states"
+        "Returns the number of past states (includes current state)"
         return len(self.hist)
 
-    # Get key is passed the new state dict and the key to be inserted
-    # Returns the dictionary in which to insert the key
-    # getkey will be evaluated more than once per key to update the cache
-    def new_state(self, keys, vals, getkey=(lambda s, k: s)):
-        newhist = {}
-        for k, v in itertools.izip(keys, vals):
-            d = getkey(newhist, k)
-            d[k] = v
-            c = getkey(self.cache, k)
-            c[k] = v
+    def new_state(self, *args, **kwargs):
+        """Create a new history state.
+
+        Any arguments are passed to the constructor for the state dictionary;
+        states may be constructed with keys in this way."""
+        self.hist.append(dict(*args, **kwargs))
         if len(self.tail) > 0:
             self.tail.clear()
-        self.hist.append(newhist)
         self.cache = None
 
     def fill_cache(self):
@@ -101,12 +96,11 @@ class History:
 # Optional getkey parameter is used to filter the history state if non-None
 # Ex: getkey=(lambda s: return s["procs"]) will make search the procs dict
 # of each state for the specified key
-def hist_find(history, key, getkey=(lambda s: s)):
+def hist_find(history, key):
     """Find the most recent value for a key in the history.
 
     The dictionary returned by getkey() is searched."""
     for s in history:
-        d = getkey(s)
-        if key in d:
-            return d[key]
+        if key in s:
+            return s[key]
     return None

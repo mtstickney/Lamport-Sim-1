@@ -23,7 +23,7 @@ class History:
         # Tail holds future events when we step backwards
         self.tail = collections.deque()
         self.hist.append(initial_state)
-        self.cache = initial_state
+        self.cache = dict(initial_state)
 
     def __iter__(self):
         "Return iterator for stored events, from newer to older"

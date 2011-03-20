@@ -33,8 +33,8 @@ class History:
         return len(self.hist)+len(self.tail)
 
     def past_len(self):
-        "Returns the number of past states (includes current state)"
-        return len(self.hist)
+        "Returns the number of past states"
+        return len(self.hist)-1
 
     def new_state(self, *args, **kwargs):
         """Create a new history state.

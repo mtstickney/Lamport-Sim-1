@@ -17,14 +17,12 @@ class History:
     """Manage a history of application states.
 
     Only changed items are stored in each state, to reduce storage costs."""
-    def __init__(self, initial_state=None):
+    def __init__(self, initial_state={}):
         self.hist = collections.deque()
         # Tail holds future events when we step backwards
         self.tail = collections.deque()
-        self.cache = None
-        if initial_state is not None:
-            self.hist.append(initial_state)
-            self.cache = initial_state
+        self.hist.append(initial_state)
+        self.cache = initial_state
 
     def __iter__(self):
         "Return iterator for stored events, from newer to older"

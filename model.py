@@ -4,9 +4,11 @@ import random
 import heapq
 import util
 
-MAX_RAND_INCREMENT=500
-TIEBREAKER_FUNC=(lambda m1, m2: m1.sender < m2.sender)
-INITIAL_GRANT=0
+# MAX_RAND_INCREMENT=500
+# TIEBREAKER_FUNC=(lambda m1, m2: m1.sender < m2.sender)
+# INITIAL_GRANT=0
+# STATE should be set to the appropriate History object by the calling code
+STATE=None
 
 class Message:
     def __init__(self, msg_type, sender_id, timestamp, data=None):
@@ -42,16 +44,20 @@ class Process:
         pid -- the pid of this process.
         clock_increment -- value that the clock is incremented by when an event
         occurs.
-        event_interval -- determines how often the process requests the resource."""
+        event_interval -- determines how often the process requests the
+        resource."""
         self.clock = 0
         self.pid = pid
         if (clock_increment is None):
-            self.clock_increment = random.randint(1, MAX_RAND_INCREMENT)
+            max_rand_increment = STATE['MAX_RAND_INCR']
+            self.clock_increment = random.randint(1, max_rand_increment)
         else:
             self.clock_increment = clock_increment
         self.next_clock = self.clock+self.clock_increment
         self.event_inteveral = event_interval
-        self.msg_queue = [Message("REQUEST", INITIAL_GRANT, -1, set())]
+
+        initial_grant = STATE['INITIAL_GRANT']
+        self.msg_queue = [Message("REQUEST", initial_grant, -1, set())]
 
     def update_clock(self, new_clock=None):
         """Update the clock to a new value.
@@ -67,7 +73,8 @@ class Process:
             self.clock = self.next_clock
 
         if (self.clock_increment is None):
-            self.next_clock = self.clock+random.randint(1, MAX_RAND_INCREMENT)
+            max_rand_increment = STATE['MAX_RAND_INCREMENT']
+            self.next_clock = self.clock+random.randint(1, max_rand_increment)
         else:
             self.next_clock = self.clock+self.clock_increment
 
@@ -124,8 +131,9 @@ class Process:
 # message comparison func
 def precedes(a, b):
     "Determine if a message was sent before another."
+    tiebreaker_func = STATE['TIEBREAKER']
     if a.timestamp < b.timestamp:
         return True
     if a.timestamp > b.timestamp:
         return False
-    return TIEBREAKER_FUNC(a, b)
+    return tiebreaker_func(a, b)

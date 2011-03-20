@@ -46,12 +46,13 @@ class History:
             self.tail.clear()
         self.cache.clear()
 
-    def set_current_key(self, key, val):
+    def __setitem__(self, key, val):
         # We're appending/popping on the right, so hist[-1] is the current state
+        assert len(self.hist) >= 1
         self.hist[-1][key] = val
         self.cache[key] = val
 
-    def get_current_key(self, key):
+    def __getitem__(self, key):
         assert self.cache is not None
         try:
             return self.cache[key]

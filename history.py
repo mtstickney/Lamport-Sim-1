@@ -1,6 +1,5 @@
 import collections
 import itertools
-import util
 
 # Convention: each state in the history is a dictionary of possibly updated
 # items. If an item is not in the newest dictionary, earlier dictionaries are
@@ -17,7 +16,9 @@ class History:
     """Manage a history of application states.
 
     Only changed items are stored in each state, to reduce storage costs."""
-    def __init__(self, initial_state={}):
+    def __init__(self, initial_state=None):
+        if initial_state is None:
+            initial_state = dict()
         self.hist = collections.deque()
         # Tail holds future events when we step backwards
         self.tail = collections.deque()

@@ -53,37 +53,12 @@ class History:
 
     def get_current_key(self, key):
         assert self.cache is not None
-        if key not in self.cache
-            self.fill_cache()
         try:
             return self.cache[key]
         except KeyError:
-            util.warn("Key '{}' not in history".format(key))
-            return None
-
-    def fill_cache(self):
-        if self.cache is None:
-            self.cache = dict()
-        owner = hist_find(self.hist, "res_owner")
-        if owner is None:
-            util.warn("Warning: No resource owner in history")
-            return None
-        self.cache["res_owner"] = owner
-        
-        order = hist_find(self.hist, "tiebreaker")
-        if order is None:
-            util.warn("Warning: No tiebreaker order in history")
-            return None
-        self.cache["tiebreaker"] = order
-
-        self.cache["procs"] = dict()
-        for p in pids:
-            proc = hist_find(self.hist, p, getkey=(lambda s: s["procs"]))
-            if proc is None:
-                util.warn("Warning: no process for PID %s in history" % p)
-                return None
-            self.cache["procs"][p] = proc
-        return self.cache
+            val = hist_find(self.hist, key)
+            self.cache[key] = val
+            return val
 
     def back(self, n=1):
         """Move back n positions in the history.
@@ -110,4 +85,4 @@ def hist_find(history, key):
     for s in history:
         if key in s:
             return s[key]
-    return None
+    raise KeyError

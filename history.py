@@ -1,6 +1,8 @@
 import collections
 import itertools
 
+STATE=None
+
 # Convention: each state in the history is a dictionary of possibly updated
 # items. If an item is not in the newest dictionary, earlier dictionaries are
 # searched until the item is found.

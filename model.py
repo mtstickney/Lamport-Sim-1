@@ -32,7 +32,7 @@ class Message:
         return not precedes(self, other)
 
 class Process:
-    def __init__(self, pid, clock_increment=None, event_interval=0):
+    def __init__(self, pid, clock_increment=None, event_interval=1):
         """Construct a Process.
 
         pid -- the pid of this process.

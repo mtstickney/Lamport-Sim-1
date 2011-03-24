@@ -47,3 +47,8 @@ def outgoing(recipient, msg):
     delivery_time = cur_ticks + delay_map[(msg.sender, recipient)]
     bisect.insort(outgoing_q, (delivery_time, recipient, msg))
 
+def get_deliverable(ticks):
+    deliverable = [m for m in history.STATE['OUTGOING_Q'] if m[0] <= ticks]
+    for m in deliverable:
+        history.STATE['OUTGOING_Q'].remove(m)
+    return deliverable

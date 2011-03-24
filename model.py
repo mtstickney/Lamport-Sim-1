@@ -136,17 +136,17 @@ class Process:
         return (None, msg)
 
     def has_resource(self):
-        reqs = itertools.ifilter(lambda m: m.msg_type is 'REQUEST', self.msg_queue)
+        reqs = (m for m in self.msg_queue if m.msg_type is 'REQUEST')
         try:
-            r = reqs.next()
+            r = reqs.__next__()
         except StopIteration:
             return False
         if r.sender is not self.pid:
             return False
 
         acked_procs = set()
-        ack_msgs = itertools.ifilter(lambda m: m.msg_type is 'ACK', self.msg_queue)
-        for a in ack_msgs:
+        ack_gen = (m for m in self.msg_queue if m.msg_type is 'ACK')
+        for a in ack_gen:
             acked_procs.add(a.sender)
         if len(acked_procs) is not history.STATE['NUMPROCS']:
             return False

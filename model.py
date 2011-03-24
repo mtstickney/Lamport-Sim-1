@@ -1,6 +1,7 @@
 import random
 import bisect
 import time
+import sys
 import util
 import messages
 import history
@@ -18,7 +19,7 @@ class Process:
         self.clock = 0
         self.pid = pid
         if (clock_increment is None):
-            max_rand_increment = history.STATE['MAX_RAND_INCR']
+            max_rand_increment = history.STATE['MAX_RAND_INCREMENT']
             interval = random.randint(1, max_rand_increment)
             self.next_clock = self.clock+interval
         else:
@@ -27,7 +28,7 @@ class Process:
 
         self.last_event = time.clock()
         if (event_interval is None):
-            max_rand_increment = history.STATE['MAX_RAND_INCR']
+            max_rand_increment = history.STATE['MAX_RAND_INCREMENT']
             interval = random.randint(1, max_rand_increment)
             self.next_event = self.last_event + interval
         else:
@@ -67,7 +68,7 @@ class Process:
         else:
             self.last_event = self.next_event
 
-        if self.event_increment is None:
+        if self.event_interval is None:
             max_rand_increment = history.STATE['MAX_RAND_INCREMENT']
             self.next_event = self.last_event+random.randint(1, max_rand_increment)
         else:
@@ -98,6 +99,10 @@ class Process:
 
             if m.sender is not msg.sender:
                 util.warn("Got RELEASE from process not owning resource")
+                util.warn("Request sender is {}, RELEASE sender is {}".format(m.sender, msg.sender))
+                return
+
+            self.msg_queue.remove(m)
                 
             # Now find the ACKs for that request
             acked_procs = set()
@@ -132,7 +137,7 @@ class Process:
         Updates the clock and returns a (recipient, message) pair."""
         self.update_clock()
         self.update_event()
-        msg = messages.Message("RELEASE", self, self.clock)
+        msg = messages.Message("RELEASE", self.pid, self.clock)
         return (None, msg)
 
     def has_resource(self):

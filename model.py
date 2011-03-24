@@ -44,21 +44,35 @@ class Process:
     def update_clock(self, new_clock=None):
         """Update the clock to a new value.
 
-        If new_clock is passed, the process will have new_clock as its clock
+        If new_clock is not None, the process will have new_clock as its clock
         value."""
-        if (new_clock is not None and new_clock < self.clock):
+        if new_clock is not None and new_clock < self.clock:
             return
         
-        if (new_clock is not None):
+        if new_clock is not None:
             self.clock = new_clock
         else:
             self.clock = self.next_clock
 
-        if (self.clock_increment is None):
+        if self.clock_increment is None:
             max_rand_increment = history.STATE['MAX_RAND_INCREMENT']
             self.next_clock = self.clock+random.randint(1, max_rand_increment)
         else:
             self.next_clock = self.clock+self.clock_increment
+
+    def update_event(self, new_event=None):
+        if new_event is not None and new_event < self.last_event:
+            return
+        if new_event is not None:
+            self.last_event = new_event
+        else:
+            self.last_event = self.next_event
+
+        if self.event_increment is None:
+            max_rand_increment = history.STATE['MAX_RAND_INCREMENT']
+            self.next_event = self.last_event+random.randint(1, max_rand_increment)
+        else:
+            self.next_event = self.last_event+self.event_interval
 
     # Handle an incoming message. If there is a reply, it is put on the outgoing
     # message queue (queue items have the form (recipient, reply)).
@@ -68,17 +82,17 @@ class Process:
         Updates the clock and performs an action based on message type. Returns
         a (recipient, reply) pair if a reply should be sent, None otherwise."""
         self.update_clock(msg.timestamp)
-        if msg.msg_type is intern("REQUEST"):
+        if msg.msg_type is sys.intern("REQUEST"):
             bisect.insort(self.msg_queue, msg)
             # TODO: convince yourself that ACKs don't need to specify which message they're ACKing
             # (they only work to flush other messages, and we won't act until we got one from everybody)
             reply = messages.Message("ACK", self.pid, self.clock)
-            messages.outgoing(msg.sender, reply)
-            return
-        if msg.msg_type is intern("ACK"):
+            self.update_clock()
+            return (msg.sender, reply)
+        if msg.msg_type is sys.intern("ACK"):
             bisect.insort(self.msg_queue, msg)
-            return
-        if msg.msg_type is intern("RELEASE"):
+            return None
+        if msg.msg_type is sys.intern("RELEASE"):
             for m in self.msg_queue:
                 if m.msg_type is "REQUEST":
                     break
@@ -99,18 +113,42 @@ class Process:
             if len(acked_procs) is not history.STATE['NUMPROCS']:
                 util.warn("Got RELEASE from process not owning resource (missing ACK)")
 
+            if self.has_resource():
+                self.update_event()
+
+            return None
+
     def request_resource(self):
         """Send a request for the shared resource.
 
         Updates the clock, and eturns a (recipient, message) pair."""
         self.update_clock()
+        self.update_event()
         msg = messages.Message("REQUEST", self.pid, self.clock, set())
-        messages.outgoing(None, msg)
+        return (None, msg)
 
     def release_resource(self):
         """Release the shared resource.
 
         Updates the clock and returns a (recipient, message) pair."""
         self.update_clock()
+        self.update_event()
         msg = messages.Message("RELEASE", self, self.clock)
-        messages.outgoing(None, msg)
+        return (None, msg)
+
+    def has_resource(self):
+        reqs = itertools.ifilter(lambda m: m.msg_type is 'REQUEST', self.msg_queue)
+        try:
+            r = reqs.next()
+        except StopIteration:
+            return False
+        if r.sender is not self.pid:
+            return False
+
+        acked_procs = set()
+        ack_msgs = itertools.ifilter(lambda m: m.msg_type is 'ACK', self.msg_queue)
+        for a in ack_msgs:
+            acked_procs.add(a.sender)
+        if len(acked_procs) is not history.STATE['NUMPROCS']:
+            return False
+        return True

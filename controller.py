@@ -1,9 +1,11 @@
+#!/usr/bin/python
+
 import queue
 import collections
 import sys
 import time
 import jclient
-import models
+import model
 import history
 import util
 
@@ -48,11 +50,11 @@ def handle_job(job, bot):
           history.forward()
           redraw(bot)
      if job.msg_type is 'LINK_DELAY':
-          pair = (job.from, job.to)
+          pair = (job['from'], job['to'])
           delay_map = history.STATE['LINK_DELAY']
-          for from, to, delay in job.delays:
-               delay_map[(from, to)] = delay
-               delay_map[(to, from)] = delay
+          for sender, recipient, delay in job.delays:
+               delay_map[(sender, recipient)] = delay
+               delay_map[(recipient, sender)] = delay
      if job.msg_type is 'TIEBREAKER':
           tb_func = lambda a, b: job.order.index(a.sender) < job.order.index(b.sender)
           history.STATE['TIEBREAKER'] = tb_func
@@ -96,41 +98,42 @@ def handle_job(job, bot):
      if job.msg_type is 'QUIT':
           util.warn("Quitting")
           sys.exit(0)
-     if job.msg_type is ''
 
 if __name__ == "__main__":
-     if len(sys.argv) is not 3:
-          util.warn("Usage: SimBot jid password mucroom")
+     if len(sys.argv) is not 5:
+          util.warn("Usage: SimBot jid password mucroom, numprocs")
           print("Usage: SimBot jid password mucroom")
           sys.exit(1)
           
-     initial_state = { 'NUMPROCS': 1,
+     initial_state = { 'NUMPROCS': int(sys.argv[4]),
                        'MAX_RAND_INCR': 500,
                        'TIEBREAKER': lambda m1, m2: m1.sender < m2.sender,
                        'INITIAL_GRANT': 0,
                        'OUTGOING_Q': [],
-                       'LINK_DELAYS': collections.defaultDict(lambda : 0),
+                       'LINK_DELAYS': collections.defaultdict(lambda : 0),
                        'TICKS': 0,
                        'TIEBREAKER': (lambda a, b: a.sender < b.sender),
                        'BASE_TIME': time.clock(),
-                       0: Process(0, event_interval=5)
                     }
      history.STATE = history.History(initial_state)
 
+     for i in range(int(sys.argv[4])):
+          history.STATE[i] = model.Process(i, event_interval=5)
+
      work_queue = queue.Queue()
-     bot = SimBot(sys.argv[1], sys.argv[2], sys.argv[3], work_queue)
+     bot = jclient.SimBot(sys.argv[1], sys.argv[2], sys.argv[3], work_queue)
      if not bot.connect(('bitworks.hopto.org', 5222)):
           util.warn("Unable to connect")
-          return
-     bot.joinMUC(bot.mucroom, bot.jid)
+          sys.exit(1)
+     bot['xep_0045'].joinMUC(bot.mucroom, bot.jid)
      bot.process()
 
      while True:
-          if history.STATE['PAUSED']:
+          if PAUSED:
                continue
           try:
                job = work_queue.get()
-          except Empty:
+          except queue.Empty:
                job = None
           if job is not None:
                handle_job(job)

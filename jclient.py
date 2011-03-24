@@ -18,7 +18,6 @@ class SimBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("proc_res_claim", self.local_event)
         self.add_event_handler("proc_res_release", self.local_event)
         self.add_event_handler("clock_update", self.local_event)
-        self.add_event_handler("message", self.message)
         self.add_event_handler("sim_event", self.local_event)
 
     def start(self, event):
@@ -30,7 +29,7 @@ class SimBot(sleekxmpp.ClientXMPP):
         if msg.get_type() is not 'groupchat':
             util.warn("Ignoring message of type '"+ msg.get_type() + "'")
             return
-        if msg.from is not self.jid:
+        if msg['from'] is not self.jid:
             self.msg_queue.put(json.loads(msg.body), True)
 
     def local_event(self, data):

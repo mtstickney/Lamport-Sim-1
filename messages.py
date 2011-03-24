@@ -12,7 +12,7 @@ class Message:
         timestamp -- value of the sending processes clock when the message
         was sent.
         data -- optional message-specific data."""
-        self.msg_type = intern(msg_type)
+        self.msg_type = sys.intern(msg_type)
         self.sender = sender_id
         self.timestamp = timestamp
         self.data = data

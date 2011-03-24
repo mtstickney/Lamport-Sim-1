@@ -23,8 +23,7 @@ class Process:
             self.next_clock = self.clock+interval
         else:
             self.next_clock = self.clock + clock_increment
-            self.clock_increment = clock_increment
-        self.next_clock = self.clock+self.clock_increment
+        self.clock_increment = clock_increment
 
         self.last_event = time.clock()
         if (event_interval is None):
@@ -39,7 +38,7 @@ class Process:
         initial_grant = history.STATE['INITIAL_GRANT']
         self.msg_queue = [messages.Message("REQUEST", initial_grant, -1, set())]
         for i in range(history.STATE['NUMPROCS']):
-            self.msg_queue.insort(messages.Message("ACK", i, 0))
+            bisect.insort(self.msg_queue, messages.Message("ACK", i, 0))
 
     def update_clock(self, new_clock=None):
         """Update the clock to a new value.

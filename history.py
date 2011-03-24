@@ -1,5 +1,6 @@
 import collections
 import itertools
+import copy
 
 STATE=None
 
@@ -45,22 +46,19 @@ class History:
         Any arguments are passed to the constructor for the state dictionary;
         states may be constructed with keys in this way."""
         self.hist.append(dict(*args, **kwargs))
-        if len(self.tail) > 0:
-            self.tail.clear()
+        self.tail.clear()
 
     def __setitem__(self, key, val):
         # We're appending/popping on the right, so hist[-1] is the current state
-        assert len(self.hist) >= 1
+        assert len(self.hist) > 0
         self.hist[-1][key] = val
-        self.cache[key] = val
 
     def __getitem__(self, key):
-        assert self.cache is not None
         try:
-            return self.cache[key]
+            return self.hist[-1][key]
         except KeyError:
             val = hist_find(reversed(self.hist), key)
-            self.cache[key] = val
+            self.hist[-1][key] = val
             return val
 
     def back(self, n=1):
@@ -87,5 +85,5 @@ def hist_find(history, key):
     The dictionary returned by getkey() is searched."""
     for s in history:
         if key in s:
-            return s[key]
+            return copy.deepcopy(s[key])
     raise KeyError

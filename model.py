@@ -38,6 +38,8 @@ class Process:
         # Set initial grant and ACK messages
         initial_grant = history.STATE['INITIAL_GRANT']
         self.msg_queue = [messages.Message("REQUEST", initial_grant, -1, set())]
+        for i in range(history.STATE['NUMPROCS']):
+            self.msg_queue.insort(messages.Message("ACK", i, 0))
 
     def update_clock(self, new_clock=None):
         """Update the clock to a new value.

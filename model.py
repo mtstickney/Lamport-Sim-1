@@ -1,5 +1,6 @@
 import random
 import bisect
+import time
 import util
 import messages
 import history
@@ -18,12 +19,23 @@ class Process:
         self.pid = pid
         if (clock_increment is None):
             max_rand_increment = history.STATE['MAX_RAND_INCR']
-            self.clock_increment = random.randint(1, max_rand_increment)
+            interval = random.randint(1, max_rand_increment)
+            self.next_clock = self.clock+interval
         else:
+            self.next_clock = self.clock + clock_increment
             self.clock_increment = clock_increment
         self.next_clock = self.clock+self.clock_increment
-        self.event_inteveral = event_interval
 
+        self.last_event = time.clock()
+        if (event_interval is None):
+            max_rand_increment = history.STATE['MAX_RAND_INCR']
+            interval = random.randint(1, max_rand_increment)
+            self.next_event = self.last_event + interval
+        else:
+            self.next_event = self.last_event + event_interval
+        self.event_interval = event_interval
+
+        # Set initial grant and ACK messages
         initial_grant = history.STATE['INITIAL_GRANT']
         self.msg_queue = [messages.Message("REQUEST", initial_grant, -1, set())]
 

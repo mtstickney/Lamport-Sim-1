@@ -8,6 +8,7 @@ import jclient
 import model
 import history
 import util
+import messages
 
 PAUSED=False
 
@@ -125,6 +126,7 @@ if __name__ == "__main__":
      if not bot.connect(('bitworks.hopto.org', 5222)):
           util.warn("Unable to connect")
           sys.exit(1)
+     sys.exitfunc = lambda : bot.disconnect()
      bot['xep_0045'].joinMUC(bot.mucroom, bot.jid)
      bot.process()
 
@@ -132,7 +134,7 @@ if __name__ == "__main__":
           if PAUSED:
                continue
           try:
-               job = work_queue.get()
+               job = work_queue.get_nowait()
           except queue.Empty:
                job = None
           if job is not None:

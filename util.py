@@ -1,2 +1,2 @@
 def warn(str):
-    print str
+    print(str)

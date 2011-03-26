@@ -42,6 +42,24 @@ class Process:
             for i in range(history.STATE['NUMPROCS']):
                 bisect.insort(self.msg_queue, messages.Message("ACK", i, initial_grant, -1))
 
+    def update_req_interval():
+        if self.event_interval is None:
+            max_incr = history.STATE['MAX_RAND_INCREMENT']
+            interval = random.randint(1, max_incr)
+            self.next_event = self.last_event+interval
+        else:
+            assert self.event_interval > 0
+            self.next_event = self.last_event+self.event_interval
+
+    def update_clock_interval():
+        if self.clock_increment is None:
+            max_incr = history.STATE['MAX_RAND_INCREMENT']
+            interval = random.randint(1, max_incr)
+            self.next_clock = self.clock+interval
+        else:
+            assert self.clock_increment > 0
+            self.next_clock = self.clock+self.clock_increment
+
     def update_clock(self, new_clock=None):
         """Update the clock to a new value.
 

@@ -13,16 +13,20 @@ class SimBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("groupchat_message", self.groupchat_message)
-        self.add_event_handler("proc_msg_send", self.local_event)
-        self.add_event_handler("proc_msg_recv", self.local_event)
-        self.add_event_handler("proc_res_claim", self.local_event)
-        self.add_event_handler("proc_res_release", self.local_event)
-        self.add_event_handler("clock_update", self.local_event)
+        self.add_event_handler("message", self.message)
         self.add_event_handler("sim_event", self.local_event)
 
     def start(self, event):
         print("Starting session")
-        self.sendPresence(pstatus='Available')
+        self.send_presence(pstatus='Available')
+
+    def message(self, msg):
+        print("Received message '{}'".format(msg))
+        if msg.get_type() is not 'chat':
+            util.warn("Ignoring message of type '"+msg.get_type()+"'")
+            return
+        if msg['from'] is not self.jid:
+            self.msg_queue.put(json.loads(msg.body))
 
     def groupchat_message(self, msg):
         print("Got group message '{}'".format(msg))

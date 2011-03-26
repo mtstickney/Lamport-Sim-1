@@ -3,7 +3,7 @@ import bisect
 import history
 
 class Message:
-    def __init__(self, msg_type, sender_id, timestamp, data=None):
+    def __init__(self, msg_type, sender_id, recipient_id, timestamp, data=None):
         """Construct a message.
 
         msg_type -- string (will be interned) describing which type of message
@@ -14,6 +14,7 @@ class Message:
         data -- optional message-specific data."""
         self.msg_type = sys.intern(msg_type)
         self.sender = sender_id
+        self.recipient = recipient_id
         self.timestamp = timestamp
         self.data = data
 
@@ -39,13 +40,13 @@ def precedes(a, b):
         return False
     return tiebreaker_func(a, b)
 
-def outgoing(recipient, msg):
+def outgoing(msg):
     outgoing_q = history.STATE['OUTGOING_Q']
     delay_map = history.STATE['LINK_DELAYS']
     cur_ticks = history.STATE['TICKS']
     
-    delivery_time = cur_ticks + delay_map[(msg.sender, recipient)]
-    bisect.insort(outgoing_q, (delivery_time, recipient, msg))
+    delivery_time = cur_ticks + delay_map[(msg.sender, msg.recipient)]
+    bisect.insort(outgoing_q, (delivery_time, msg))
 
 def get_deliverable(ticks):
     deliverable = [m for m in history.STATE['OUTGOING_Q'] if m[0] <= ticks]

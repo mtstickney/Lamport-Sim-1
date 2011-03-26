@@ -37,9 +37,10 @@ class Process:
 
         # Set initial grant and ACK messages
         initial_grant = history.STATE['INITIAL_GRANT']
-        self.msg_queue = [messages.Message("REQUEST", initial_grant, -1, set())]
-        for i in range(history.STATE['NUMPROCS']):
-            bisect.insort(self.msg_queue, messages.Message("ACK", i, 0))
+        self.msg_queue = [messages.Message("REQUEST", initial_grant, self.pid, -2)]
+        if self.pid is initial_grant:
+            for i in range(history.STATE['NUMPROCS']):
+                bisect.insort(self.msg_queue, messages.Message("ACK", i, initial_grant, -1))
 
     def update_clock(self, new_clock=None):
         """Update the clock to a new value.
@@ -86,9 +87,9 @@ class Process:
             bisect.insort(self.msg_queue, msg)
             # TODO: convince yourself that ACKs don't need to specify which message they're ACKing
             # (they only work to flush other messages, and we won't act until we got one from everybody)
-            reply = messages.Message("ACK", self.pid, self.clock)
+            reply = messages.Message("ACK", self.pid, msg.sender, self.clock)
             self.update_clock()
-            return (msg.sender, reply)
+            return reply
         if msg.msg_type is sys.intern("ACK"):
             bisect.insort(self.msg_queue, msg)
             return None
@@ -128,8 +129,8 @@ class Process:
         Updates the clock, and eturns a (recipient, message) pair."""
         self.update_clock()
         self.update_event()
-        msg = messages.Message("REQUEST", self.pid, self.clock, set())
-        return (None, msg)
+        msg = messages.Message("REQUEST", self.pid, None, self.clock, set())
+        return msg
 
     def release_resource(self):
         """Release the shared resource.
@@ -137,8 +138,8 @@ class Process:
         Updates the clock and returns a (recipient, message) pair."""
         self.update_clock()
         self.update_event()
-        msg = messages.Message("RELEASE", self.pid, self.clock)
-        return (None, msg)
+        msg = messages.Message("RELEASE", self.pid, None, self.clock)
+        return msg
 
     def has_resource(self):
         reqs = (m for m in self.msg_queue if m.msg_type is 'REQUEST')

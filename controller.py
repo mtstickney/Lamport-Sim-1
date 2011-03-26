@@ -142,7 +142,7 @@ if __name__ == "__main__":
           sys.exit(1)
 
      initial_state = { 'NUMPROCS': int(sys.argv[4]),
-                       'MAX_RAND_INCREMENT': 10,
+                       'MAX_RAND_INCREMENT': 500,
                        'TIEBREAKER': lambda m1, m2: m1.sender < m2.sender,
                        'INITIAL_GRANT': 0,
                        'OUTGOING_Q': [],

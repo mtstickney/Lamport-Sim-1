@@ -3,13 +3,15 @@ import sleekxmpp
 import util
 
 class SimBot(sleekxmpp.ClientXMPP):
-    def __init__(self, jid, password, mucroom, msg_queue):
+    def __init__(self, jid, password, mucroom, msg_queue, clients):
         sleekxmpp.ClientXMPP.__init__(self, jid, password)
         self.register_plugin('xep_0045')
         self['xep_0045'].plugin_init()
 
         self.msg_queue = msg_queue
         self.mucroom = mucroom
+
+        self.client_lst = clients
 
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("groupchat_message", self.groupchat_message)
@@ -38,6 +40,8 @@ class SimBot(sleekxmpp.ClientXMPP):
 
     def local_event(self, data):
         print("Sending message to group: '{}'".format(json.dumps(data)))
-        self.send_message(mto=self.mucroom, mbody=json.dumps(data),
-                          mfrom=self.jid, mtype='groupchat')
+        for c in self.client_lst:
+            print("Sending message to client {}".format(c))
+            self.send_message(mto=c, mbody=json.dumps(data),
+                              mfrom=self.jid, mtype='chat')
 

@@ -20,19 +20,25 @@ def deliver_message(msg, bot):
      else:
           recipients = [msg.recipient]
 
+     replies = []
      for pid in recipients:
           proc = history.STATE[pid]
+          r = proc.recv_msg(msg)
+          if r is not None:
+               replies.append(r)
           resp = { 'msg_type': 'RECV',
                    'from': msg.sender,
-                   'to': msg.recipient,
+                   'to': pid,
                    'type': msg.msg_type,
-                   'from_clock': history.STATE[msg.sender].clock}
+                   'to_clock': proc.clock
+                   }
           bot.event('sim_event', resp)
 
-     # USE OUTGOING_Q, it's in the History...
-     replies = map(lambda p: p.recv_msg(msg), newproc_lst)
-     if len(replies) is 0:
-          return
+          if proc.has_resource():
+               resp = {'msg_type': 'CLAIM',
+                       'proc': pid
+                       }
+               bot.event('sim_event', resp)
 
      for m in replies:
           resp = { 'msg_type': 'SEND',
@@ -40,7 +46,7 @@ def deliver_message(msg, bot):
                    'to': m.recipient,
                    'type': m.msg_type,
                    'from_clock': history.STATE[m.sender].clock}
-          bot.even('sim_event', resp)
+          bot.event('sim_event', resp)
           messages.outgoing(m)
 
 def handle_pause(msg):

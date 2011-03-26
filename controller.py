@@ -173,10 +173,13 @@ if __name__ == "__main__":
                work_queue.task_done()
 
           # Process up to one message from the process pool
-          delivery_time, msg = history.STATE['OUTGOING_Q'][0]
-          if delivery_time <= history.STATE['TICKS']:
-               deliver_msg(msg, bot)
-               del history.STATE['OUTGOING_Q'][0]
+          try:
+               delivery_time, msg = history.STATE['OUTGOING_Q'][0]
+               if delivery_time <= history.STATE['TICKS']:
+                    deliver_message(msg, bot)
+                    del history.STATE['OUTGOING_Q'][0]
+          except IndexError:
+               util.warn("No messages in the proc message queue. Something's busted.")
 
           # Process any timed events from the processes
           for i in range(history.STATE['NUMPROCS']):

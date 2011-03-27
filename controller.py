@@ -148,6 +148,7 @@ if __name__ == "__main__":
                        'OUTGOING_Q': [],
                        'LINK_DELAYS': collections.defaultdict(lambda : 0),
                        'TICKS': 0,
+                       'COUNTER': 0,
                        'TIEBREAKER': (lambda a, b: a.sender < b.sender),
                        'BASE_TIME': time.time(),
                     }
@@ -192,7 +193,8 @@ if __name__ == "__main__":
                proc = history.STATE[i]
                run_events(proc, history.STATE['TICKS'])
 
-          history.STATE['TICKS'] = time.time() - history.STATE['BASE_TIME']
-          print("Clock() is {}".format(time.time()))
+          history.STATE['COUNTER'] = (history.STATE['COUNTER'] + 1) % 100
+          if history.STATE['COUNTER'] == 0:
+               history.STATE['TICKS'] += 1
           print("TICKS now {}".format(history.STATE['TICKS']))
           time.sleep(.5)

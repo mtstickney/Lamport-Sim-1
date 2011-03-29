@@ -34,10 +34,9 @@ def deliver_message(msg, bot):
                    }
           bot.event('sim_event', resp)
 
-          if proc.has_resource():
+          if msg.msg_type is 'ACK' and proc.has_resource():
                resp = {'msg_type': 'CLAIM',
-                       'proc': pid
-                       }
+                       'proc': pid}
                bot.event('sim_event', resp)
 
      for m in replies:
@@ -165,6 +164,11 @@ if __name__ == "__main__":
      sys.exitfunc = lambda : bot.disconnect()
      bot.process()
 
+     # send the initial CLAIM message
+     resp = {'msg_type': 'CLAIM',
+             'proc': history.STATE['INITIAL_GRANT']}
+     bot.event('sim_event', resp)
+     
      while True:
           if PAUSED:
                continue
@@ -193,7 +197,7 @@ if __name__ == "__main__":
                proc = history.STATE[i]
                run_events(proc, history.STATE['TICKS'])
 
-          history.STATE['COUNTER'] = (history.STATE['COUNTER'] + 1) % 100
+          history.STATE['COUNTER'] = (history.STATE['COUNTER'] + 1) % 2
           if history.STATE['COUNTER'] == 0:
                history.STATE['TICKS'] += 1
           print("TICKS now {}".format(history.STATE['TICKS']))

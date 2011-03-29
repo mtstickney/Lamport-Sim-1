@@ -113,10 +113,10 @@ CLIENT_HANDLERS = {
 
 def handle_client_msg(msg, bot):
      try:
-          handler = CLIENT_HANLDERS[msg['msg_type']]
+          handler = CLIENT_HANDLERS[msg['msg_type']]
+          handler(msg)
      except KeyError:
           util.warn("Ignoring message with unhandled type '{}'".format(msg['msg_type']))
-     handler(msg)
 
 def run_events(proc, ticks):
      if proc.next_event <= ticks:
@@ -180,7 +180,7 @@ if __name__ == "__main__":
                     client_msg = work_queue.get_nowait()
                except queue.Empty:
                     break
-               handle_client_msg(client_msg)
+               handle_client_msg(client_msg, bot)
                work_queue.task_done()
 
           # Process up to one message from the process pool

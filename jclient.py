@@ -21,6 +21,7 @@ class SimBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         print("Starting session")
         self.send_presence(pstatus='Available')
+        self['xep_0045'].joinMUC(self.mucroom, self.jid)
 
     def message(self, msg):
         print("Received message '{}'".format(msg))
@@ -40,8 +41,10 @@ class SimBot(sleekxmpp.ClientXMPP):
 
     def local_event(self, data):
         print("Sending message to group: '{}'".format(json.dumps(data)))
-        for c in self.client_lst:
-            print("Sending message to client {}".format(c))
-            self.send_message(mto=c, mbody=json.dumps(data),
-                              mfrom=self.jid, mtype='chat')
+        self.send_message(mto=self.mucroom, mbody=json.dumps(data),
+                          mfrom=self.jid, mtype='groupchat')
+        # for c in self.client_lst:
+        #     print("Sending message to client {}".format(c))
+        #     self.send_message(mto=c, mbody=json.dumps(data),
+        #                       mfrom=self.jid, mtype='chat')
 

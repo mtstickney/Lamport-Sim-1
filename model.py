@@ -35,6 +35,10 @@ class Process:
             self.next_event = self.last_event + event_interval
         self.event_interval = event_interval
 
+        self.dispatch_funcs = { 'RELEASE': self.handle_release,
+                                'ACK': self.handle_ack,
+                                'REQUEST': self.handle_request}
+
         # Set initial grant and ACK messages
         initial_grant = history.STATE['INITIAL_GRANT']
         self.msg_queue = [messages.Message("REQUEST", initial_grant, self.pid, -2)]
@@ -93,6 +97,40 @@ class Process:
         else:
             self.next_event = self.last_event+self.event_interval
 
+    def handle_request(self, msg):
+        bisect.insort(self.msg_queue, msg)
+        reply = messages.Message('ACK', self.pid, msg.sender, self.clock)
+        self.update_clock()
+        return reply
+
+    def handle_ack(self, msg):
+        bisect.insort(self.msg_queue, msg)
+        return None
+
+    def handle_release(self, msg):
+        req_lst = (m for m in self.msg_queue if m.msg_type is 'REQUEST')
+        try:
+            first_req = req_lst.__next__()
+        except StopIteration:
+            util.warn("Received RELEASE with no pending requests")
+            return
+        if first_req.sender is not msg.sender:
+            util.warn("Got RELEASE from {}, but first request is from {}".format(msg.sender, m.sender))
+            return
+
+        ack_lst = []        
+        for i in range(history.STATE['NUMPROCS']):
+            try:
+                ack_msg = (m for m in self.msg_queue if m.msg_type is 'ACK' and m.sender is i).__next__()
+                ack_lst.append(ack_msg)
+            except StopIteration:
+                util.warn('Missing ACK from {} on RELEASE from {}'.format(i, msg.sender))
+
+        # Everything went ok, remove the messages
+        self.msg_queue.remove(first_req)
+        for m in ack_lst:
+            self.msg_queue.remove(m)
+            
     # Handle an incoming message. If there is a reply, it is put on the outgoing
     # message queue (queue items have the form (recipient, reply)).
     def recv_msg(self, msg):
@@ -101,45 +139,7 @@ class Process:
         Updates the clock and performs an action based on message type. Returns
         a (recipient, reply) pair if a reply should be sent, None otherwise."""
         self.update_clock(msg.timestamp)
-        if msg.msg_type is sys.intern("REQUEST"):
-            bisect.insort(self.msg_queue, msg)
-            # TODO: convince yourself that ACKs don't need to specify which message they're ACKing
-            # (they only work to flush other messages, and we won't act until we got one from everybody)
-            reply = messages.Message("ACK", self.pid, msg.sender, self.clock)
-            self.update_clock()
-            return reply
-        if msg.msg_type is sys.intern("ACK"):
-            bisect.insort(self.msg_queue, msg)
-            return None
-        if msg.msg_type is sys.intern("RELEASE"):
-            for m in self.msg_queue:
-                if m.msg_type is "REQUEST":
-                    break
-
-            if m.sender is not msg.sender:
-                util.warn("Got RELEASE from process not owning resource")
-                util.warn("Request sender is {}, RELEASE sender is {}".format(m.sender, msg.sender))
-                return
-
-            self.msg_queue.remove(m)
-                
-            # Now find the ACKs for that request
-            acked_procs = set()
-            ack_msgs = filter(lambda m: m.msg_type is "ACK",
-                                         self.msg_queue)
-            for m in ack_msgs:
-                if len(acked_procs) == history.STATE['NUMPROCS']:
-                    break
-                if m.sender not in acked_procs:
-                    acked_procs.add(m.sender)
-                    self.msg_queue.remove(m)
-            if len(acked_procs) is not history.STATE['NUMPROCS']:
-                util.warn("Got RELEASE from process not owning resource (missing ACK)")
-
-            if self.has_resource():
-                self.update_event()
-
-            return None
+        return self.dispatch_funcs[msg.msg_type](msg)
 
     def request_resource(self):
         """Send a request for the shared resource.
@@ -154,6 +154,8 @@ class Process:
         """Release the shared resource.
 
         Updates the clock and returns a (recipient, message) pair."""
+        if not self.has_resource():
+            return
         self.update_clock()
         self.update_event()
         msg = messages.Message("RELEASE", self.pid, None, self.clock)
@@ -169,8 +171,8 @@ class Process:
             return False
 
         acked_procs = set()
-        ack_gen = (m for m in self.msg_queue if m.msg_type is 'ACK')
-        for a in ack_gen:
+        ack_lst = (m for m in self.msg_queue if m.msg_type is 'ACK')
+        for a in ack_lst:
             acked_procs.add(a.sender)
         if len(acked_procs) is not history.STATE['NUMPROCS']:
             return False

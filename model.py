@@ -115,7 +115,7 @@ class Process:
             util.warn("Received RELEASE with no pending requests")
             return
         if first_req.sender is not msg.sender:
-            util.warn("Got RELEASE from {}, but first request is from {}".format(msg.sender, m.sender))
+            util.warn("Got RELEASE from {}, but first request is from {}".format(msg.sender, first_req.sender))
             return
 
         ack_lst = []        

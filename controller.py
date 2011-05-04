@@ -11,6 +11,7 @@ import util
 import messages
 
 PAUSED=False
+bot=None
 
 def deliver_message(msg, bot):
      history.STATE.new_state()
@@ -60,7 +61,13 @@ def handle_back(msg):
      history.STATE.back()
 
 def handle_forward(msg):
-     history.STATE.forward()
+     if len(history.STATE.tail) > 0:
+          history.STATE.forward()
+     else:
+          # Do simulation steps until a new state is created
+          states = len(history.STATE)
+          while len(history.STATE) is states:
+               sim_step(bot)
 
 def handle_delay(msg):
      delay_map = history.STATE['LINK_DELAY']
@@ -98,6 +105,7 @@ def handle_request(msg):
               'to': m.recipient,
               'type': m.msg_type,
               'from_clock': proc.clock}
+     return resp
 
 CLIENT_HANDLERS = {
      'PAUSE': handle_pause,
@@ -114,7 +122,9 @@ CLIENT_HANDLERS = {
 def handle_client_msg(msg, bot):
      try:
           handler = CLIENT_HANDLERS[msg['msg_type']]
-          handler(msg)
+          resp = handler(msg)
+          if resp is not None:
+               bot.event('sim_event', resp)
      except KeyError:
           util.warn("Ignoring message with unhandled type '{}'".format(msg['msg_type']))
 
@@ -133,6 +143,31 @@ def run_events(proc, ticks):
                   }
           bot.event('sim_event', resp)
           proc.update_req_interval()
+
+def sim_step(bot):
+     # Process stuff from the client first, since they can't see pending
+     # stuff in here
+     while True:
+          try:
+               client_msg = work_queue.get_nowait()
+          except queue.Empty:
+               break
+          handle_client_msg(client_msg, bot)
+          work_queue.task_done()
+
+     # Process up to one message from the process pool
+     try:
+          delivery_time, msg = history.STATE['OUTGOING_Q'][0]
+          if delivery_time <= history.STATE['TICKS']:
+               deliver_message(msg, bot)
+               del history.STATE['OUTGOING_Q'][0]
+     except IndexError:
+          util.warn("No messages in the proc message queue. Something's busted.")
+
+     # Process any timed events from the processes
+     for i in range(history.STATE['NUMPROCS']):
+          proc = history.STATE[i]
+          run_events(proc, history.STATE['TICKS'])
 
 if __name__ == "__main__":
      if len(sys.argv) < 5:
@@ -156,6 +191,7 @@ if __name__ == "__main__":
      for i in range(int(sys.argv[4])):
           history.STATE[i] = model.Process(i, event_interval=5)
 
+# global bot
      work_queue = queue.Queue()
      bot = jclient.SimBot(sys.argv[1], sys.argv[2], sys.argv[3], work_queue, sys.argv[5:])
      if not bot.connect(('bitworks.hopto.org', 5222)):
@@ -173,29 +209,7 @@ if __name__ == "__main__":
           if PAUSED:
                continue
 
-          # Process stuff from the client first, since they can't see pending
-          # stuff in here
-          while True:
-               try:
-                    client_msg = work_queue.get_nowait()
-               except queue.Empty:
-                    break
-               handle_client_msg(client_msg, bot)
-               work_queue.task_done()
-
-          # Process up to one message from the process pool
-          try:
-               delivery_time, msg = history.STATE['OUTGOING_Q'][0]
-               if delivery_time <= history.STATE['TICKS']:
-                    deliver_message(msg, bot)
-                    del history.STATE['OUTGOING_Q'][0]
-          except IndexError:
-               util.warn("No messages in the proc message queue. Something's busted.")
-
-          # Process any timed events from the processes
-          for i in range(history.STATE['NUMPROCS']):
-               proc = history.STATE[i]
-               run_events(proc, history.STATE['TICKS'])
+          sim_step(bot)
 
           history.STATE['COUNTER'] = (history.STATE['COUNTER'] + 1) % 2
           if history.STATE['COUNTER'] == 0:
